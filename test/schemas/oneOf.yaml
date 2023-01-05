@@ -1,0 +1,43 @@
+$id: OneOfDefs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  SomeObject:
+    type: object
+
+  OneOf:
+    oneOf:
+      - type: string
+      - type: number
+      - $ref: "#/$defs/SomeObject"
+  OneOfObject:
+    type: object
+    properties:
+      x:
+        oneOf:
+        - type: string
+        - type: number
+        - $ref: "#/$defs/SomeObject"
+  OneOfEnum:
+    type: string
+    oneOf:
+      - title: "Foo"
+        const: "foo"
+      - title: "Bar"
+        const: "bar"
+  nestedOneOf:
+    oneOf:
+      - oneOf:
+        - type: string
+        - type: number
+      - oneOf:  
+        - type: integer
+  nestedOneOfOnObject:
+    type: object
+    properties:
+      x:
+        oneOf:
+        - oneOf:
+          - type: string
+          - type: number
+        - oneOf:  
+          - type: integer

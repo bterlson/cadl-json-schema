@@ -1,0 +1,53 @@
+$id: Person
+title: Person
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  address1:
+    $ref: '#/$defs/addressLocal'
+  address2:
+    $ref: 'address.yaml'
+  address3:
+    $ref: './address.yaml'
+  
+  # this works since we've already referenced address, but would otherwise only work
+  # if the user had explicitly added that schema since this is a lookup by canonical path
+  address4:
+    $ref: 'address'
+  age:
+    type: "integer"
+    $ref: "#/$defs/ageConstraints"
+  name:
+    $ref: "#/$defs/name"
+  position:
+    description: "The position of the person"
+    type: "object"
+    properties:
+      x:
+        type: "number"
+      y:
+        type: "number"
+    required:
+      - x
+      - y
+  inlineDecl:
+    title: inlineDeclString
+    type: "string"
+required:
+  - address1
+$defs:
+  addressLocal:
+    description: "A local address!"
+    type: "object"
+    properties:
+      street:
+        type: "string"
+  ageConstraints:
+    maximum: 120
+    minimum: 0
+  name:
+    type: "string"
+    maxLength: 100
+  ObjectHasRef:
+    description: "A special object"
+    $ref: "#/$defs/addressLocal"

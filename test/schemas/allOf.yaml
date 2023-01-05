@@ -1,0 +1,81 @@
+$id: AllOfDefs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  AllOfHappy:
+    type: object
+    allOf:
+      - $ref: "#/$defs/AModel"
+      - $ref: "#/$defs/BModel"
+    properties:
+      local:
+        type: string
+  AllOfInline:
+    type: object
+    allOf:
+      - type: object
+        properties:
+          a:
+            type: string
+      - type: object
+        properties:
+          b:
+            type: string
+  AllOfSomeProps:
+    type: object
+    properties:
+      a:
+        type: string
+    allOf:
+      - properties:
+          b: 
+            type: string
+      - properties:
+          c:
+            type: string
+        required:
+          - c
+  NestedAllOf:
+    type: object
+    allOf:
+      - allOf:
+          - $ref: "#/$defs/AModel"
+      - allOf:
+          - $ref: "#/$defs/description"
+  NestedAllOfMustFlatten1:
+    type: object
+    allOf:
+      - allOf:
+        - $ref: "#/$defs/AModel"
+      - allOf:
+        - required:
+          - a
+  NestedAllOfMustFlatten2:
+    type: object
+    allOf:
+      - allOf:
+        - $ref: "#/$defs/AModel"
+    required:
+      - a
+  AModel:
+    type: object
+    properties:
+      a:
+        type: string
+  BModel:
+    type: object
+    properties:
+      b:
+        type: string
+  AllOfConstraints:
+    type: object
+    properties:
+      a:
+        type: string
+    allOf:
+      - $ref: "#/$defs/description"
+      - $ref: "#/$defs/required"
+  description:
+    description: "fancy object"
+  required:
+    required:
+      - a

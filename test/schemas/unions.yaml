@@ -1,0 +1,10 @@
+$id: UnionDefs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  StringOrNumber:
+    type: ["string", "number", "null"]
+  SomeObject:
+    type: object
+    properties:
+      y:
+        type: ["string", "number", "null"]

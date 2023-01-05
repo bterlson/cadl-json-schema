@@ -1,0 +1,21 @@
+$id: https://example.com/defs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  shortstring1:
+    type: "string"
+    maxLength: 10
+  shortstring2:
+    type: "string"
+    $ref: "#/$defs/maxLength"
+  shortstring3:
+    minLength: 5
+    $ref: "#/$defs/shortstring1"
+  shortstring4:
+    $ref: "#/$defs/shortstring2"
+  maxLength:
+    maxLength: 20
+
+# scalar shortstring1 extends string;
+# scalar shortstring2 extends string;
+# scalar shortstring3 extends shortstring1;
+# scalar shortstring4 extends shortstring2;

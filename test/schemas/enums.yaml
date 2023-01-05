@@ -1,0 +1,33 @@
+$id: EnumDefs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  NumberEnum:
+    type: number
+    enum:
+      - 0
+      - 1
+  StringEnum:
+    type: string
+    enum:
+      - 'hi'
+      - 'bye'
+  ObjectEnum:
+    type: object
+    enum:
+      - { a: true }
+      - $ref: "#/$defs/SomeObject"
+  MixedEnum:
+    type: ["string", "number"]
+    enum:
+      - 0
+      - "hi"
+  SomeObject:
+    type: object
+    properties:
+      x:
+        $ref: "#/$defs/ObjectEnum"
+      y:
+        type: string
+        enum:
+          - 'hi'
+          - 'bye'

@@ -1,0 +1,46 @@
+$id: ArrayDefs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  SimpleArray:
+    type: "array"
+  TypedArray:
+    type: "array"
+    items:
+      type: "number"
+  TypedArrayWithObject:
+    type: "array"
+    items:
+      type: "object"
+      properties:
+        x:
+          type: "number"
+        y:
+          type: "number"
+  ArrayWithConstraints:
+    type: array
+    minItems: 2
+    maxItems: 4
+  ArrayWithRefs:
+    type: array
+    $ref: "#/$defs/ArrayConstraints"
+    items:
+      $ref: "#/$defs/TypedArray"
+  ArrayConstraints:
+    minItems: 2
+  ObjectWithArray:
+    type: "object"
+    properties:
+      inlineArray:
+        type: "array"
+        items:
+          type: string
+      arrayRef:
+        minItems: 2
+        $ref: "#/$defs/TypedArray"
+      arrayItemsRef:
+        type: "array"
+        items:
+          $ref: "#/$defs/TypedArray"
+  ExtendsArray:
+    type: array
+    $ref: "#/$defs/TypedArray"

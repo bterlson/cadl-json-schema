@@ -1,0 +1,28 @@
+$id: TupleDefs
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  ClosedTuple:
+    type: array
+    prefixItems:
+      - type: number
+      - type: string
+    items: false
+  ClosedTupleOld:
+    $schema: https://json-schema.org/drafts/2019-09/schema
+    type: array
+    items:
+      - type: number
+      - type: string
+    additionalItems: false
+  OpenTuple:
+    type: array
+    prefixItems:
+      - type: number
+      - type: string
+  OpenTupleOld:
+    $schema: https://json-schema.org/drafts/2019-09/schema
+    type: array
+    items:
+      - type: number
+      - type: string
+    additionalItems: true

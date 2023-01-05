@@ -1,0 +1,18 @@
+$id: https://example.com/mystring
+title: "MyString"
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  boolean:
+    type: boolean
+  null:
+    type: "null"
+  number:
+    type: number
+  integer:
+    type: integer
+  string:
+    type: string
+  shortstring:
+    $ref: '#/$defs/string'
+    maxLength: 10
+$ref: '#/$defs/shortstring'

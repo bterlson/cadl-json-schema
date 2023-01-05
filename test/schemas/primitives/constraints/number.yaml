@@ -1,0 +1,9 @@
+$id: https://example.com/primitives/number
+title: "MyNumber"
+$schema: https://json-schema.org/draft/2020-12/schema
+type: "number"
+minimum: 1
+maximum: 10
+multipleOf: 2
+exclusiveMinimum: 0
+exclusiveMaximum: 11

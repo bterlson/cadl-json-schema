@@ -1,0 +1,15 @@
+$id: Person
+title: Person
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  name:
+    description: "the name of the person"
+    type: "string"
+  age:
+    description: "the age of the person"
+    minimum: 0
+    maximum: 120
+    type: "integer"
+  occupation:
+    type: "string"
