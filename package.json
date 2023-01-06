@@ -1,10 +1,15 @@
 {
-  "name": "openapi-to-cadl",
+  "name": "cadl-json-schema",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/src/index.js",
+  "bin": {
+    "json2cadl": "./dist/src/cli.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "json2cadl": "node ./dist/src/cli.js",
+    "build": "tsc -p .",
+    "test": "mocha"
   },
   "keywords": [],
   "author": "",

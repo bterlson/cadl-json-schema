@@ -272,7 +272,7 @@ describe("enums and unions", () => {
 });
 
 
-describe.only("oneOf", () => {
+describe("oneOf", () => {
   testCadlOutput(
     "handles various oneOf scenarios",
     "test/schemas/oneOf.yaml",

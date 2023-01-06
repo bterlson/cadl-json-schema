@@ -64,13 +64,12 @@ export function createCadlEmitter() {
       if (rootSchema.isDeclaration) {
         rootSchemas.push(rootSchema);
       }
-      
+
       for (const def of Object.values(rootSchema.definitions)) {
         if (def.isDeclaration) {
           defSchemas.push(def);
         }
       }
-      
     },
 
     async emit() {
@@ -84,9 +83,10 @@ export function createCadlEmitter() {
     },
   };
 
-
-
-  async function emitSchema(schema: ResolvedSchema, typeOverride?: string): Promise<CadlType> {
+  async function emitSchema(
+    schema: ResolvedSchema,
+    typeOverride?: string
+  ): Promise<CadlType> {
     if (!typeOverride && schemaToModel.has(schema.retrievalUrl.href)) {
       return schemaToModel.get(schema.retrievalUrl.href)!;
     }
@@ -99,7 +99,7 @@ export function createCadlEmitter() {
   }
 
   async function emitSchemaToDeclaration(
-    schema: ResolvedSchema,
+    schema: ResolvedSchema
   ): Promise<CadlTypeDeclaration> {
     const type = schema.type;
 
@@ -136,51 +136,59 @@ export function createCadlEmitter() {
     return cadlType;
   }
 
-
   async function unionDeclFromArray(schema: ResolvedSchema) {
     const cadlType = createCadlDecl(schema);
     const variants = [];
     for (const [i, type] of (schema.type! as string[]).entries()) {
-      variants.push(`variant${i}: ${cadlReference(await emitSchema(schema, type))};`);
+      variants.push(
+        `variant${i}: ${cadlReference(await emitSchema(schema, type))};`
+      );
     }
 
     cadlType.code += applyValidations(schema);
     cadlType.code += `union ${cadlType.id} {
       ${variants.join("\n")}
-    }`
+    }`;
     return cadlType;
-  };
+  }
 
   async function unionDeclFromOneOrAnyOf(schema: ResolvedSchema) {
     const cadlType = createCadlDecl(schema);
     const variants = [];
     const variantProp = schema.get("oneOf") ? "oneOf" : "anyOf";
-    const variantSchemas = schema.get("variantProp");
+    const variantSchemas = schema.get("variantProp") ?? [];
 
     for (let i = 0; i < variantSchemas.length; i++) {
-      const resolvedSchema = await schema.resolveSubschema(`0/${variantProp}/${i}`);
+      const resolvedSchema = await schema.resolveSubschema(
+        `0/${variantProp}/${i}`
+      );
       let name = resolvedSchema.get("title") ?? `variant${i}`;
-      variants.push(`${name}: ${cadlReference(await emitSchema(resolvedSchema))};`);
+      variants.push(
+        `${name}: ${cadlReference(await emitSchema(resolvedSchema))};`
+      );
     }
 
     cadlType.code += applyValidations(schema);
     if (schema.get("oneOf")) {
-      cadlType.code += "@oneOf\n";
+      cadlType.code += "// @oneOf\n";
     }
 
     cadlType.code += `union ${cadlType.id} {
       ${variants.join("\n")}
-    }`
+    }`;
     return cadlType;
-  };
-  
+  }
+
   async function enumDecl(schema: ResolvedSchema) {
     const cadlType = createCadlDecl(schema);
-    const members: any[] = schema.get("const") ? [ schema.get("const") ] : schema.get("enum");
+    const members: any[] = schema.get("const")
+      ? [schema.get("const")]
+      : schema.get("enum");
 
-    const declKind = schema.type === "string" || schema.type === "number" ? "enum" : "union";
+    const declKind =
+      schema.type === "string" || schema.type === "number" ? "enum" : "union";
     const prefix = declKind === "union" ? "variant" : "member";
-    
+
     const variants = [];
     for (const [i, type] of members.entries()) {
       variants.push(`${prefix}${i}: ${JSON.stringify(type)};`);
@@ -188,17 +196,19 @@ export function createCadlEmitter() {
 
     cadlType.code += `${declKind} ${cadlType.id} {
       ${variants.join("\n")}
-    }`
+    }`;
 
     return cadlType;
   }
 
   async function enumExpression(schema: ResolvedSchema) {
     const cadlType: CadlTypeExpression = {
-      kind: 'expression',
-      code: ''
-    }
-    const members: any[] = schema.get("const") ? [ schema.get("const") ] : schema.get("enum");
+      kind: "expression",
+      code: "",
+    };
+    const members: any[] = schema.get("const")
+      ? [schema.get("const")]
+      : schema.get("enum");
 
     const variants = [];
     for (const type of members.values()) {
@@ -210,27 +220,29 @@ export function createCadlEmitter() {
   }
   async function unionExpressionFromArray(schema: ResolvedSchema) {
     const cadlType: CadlTypeExpression = {
-      kind: 'expression',
-      code: ''
-    }
+      kind: "expression",
+      code: "",
+    };
     const variants = [];
     for (const type of (schema.type! as string[]).values()) {
       variants.push(cadlReference(await emitSchema(schema, type)));
     }
 
-    cadlType.code += variants.join(" | ")
+    cadlType.code += variants.join(" | ");
 
     return cadlType;
   }
   async function unionExpressionFromOneOf(schema: ResolvedSchema) {
     const cadlType: CadlTypeExpression = {
-      kind: 'expression',
-      code: ''
-    }
+      kind: "expression",
+      code: "",
+    };
     const variants = [];
     const variantProp = schema.get("oneOf") ? "oneOf" : "anyOf";
     for (let i = 0; i < schema.get(variantProp).length; i++) {
-      const resolvedSchema = await schema.resolveSubschema(`0/${variantProp}/${i}`);
+      const resolvedSchema = await schema.resolveSubschema(
+        `0/${variantProp}/${i}`
+      );
       variants.push(`${cadlReference(await emitSchema(resolvedSchema))}`);
     }
 
@@ -245,15 +257,40 @@ export function createCadlEmitter() {
     }
 
     const allOfResults = await flattenAllOfs(schema);
-    const type = createCadlDecl(schema);
-    type.code += applyValidations(schema);
 
-    for (const flattenedSchema of allOfResults.flatten) {
-      type.code += applyValidations(flattenedSchema);
+    const type = createCadlDecl(schema);
+
+    // refs would be spreads, but sometimes we have to flatten them when a local
+    // keyword would affect the shape of the spread object, e.g. when `required`
+    // is present.
+    // It might be possible in principle to only flatten when required references
+    // a property that is actually spread, but for now any required being present
+    // in any non-referenced schema causes everything to be flattened.
+    let flattenRefs = false;
+    for (const schema of allOfResults.schemas) {
+      if (schema.has("required")) {
+        flattenRefs = true;
+        break;
+      }
+    }
+
+    const { flattens, spreads } = flattenRefs
+      ? {
+          flattens: [...allOfResults.references, ...allOfResults.schemas],
+          spreads: [],
+        }
+      : { flattens: allOfResults.schemas, spreads: allOfResults.references };
+
+    for (const schema of flattens) {
+      type.code += applyValidations(schema);
     }
 
     let isClause = "";
     if (schema.referencedSchema) {
+      // this schema will be the first in the spreads list, and we
+      // don't want to spread it.
+      spreads.shift();
+
       isClause = ` is ${cadlReference(
         await emitSchema(schema.referencedSchema)
       )}`;
@@ -261,62 +298,47 @@ export function createCadlEmitter() {
 
     type.code += `model ${type.id}${isClause} ${await getObjectProperties(
       schema,
-      allOfResults
+      flattens,
+      spreads
     )}`;
 
     return type;
   }
 
   interface AllOfResults {
-    spread: ResolvedSchema[];
-    flatten: ResolvedSchema[];
-    mustFlatten: boolean;
+    schemas: ResolvedSchema[];
+    references: ResolvedSchema[];
   }
 
   async function flattenAllOfs(schema: ResolvedSchema): Promise<AllOfResults> {
-    const allOfs = schema.get("allOf");
+    const allOfs = schema.get("allOf") ?? [];
 
-    // we have to flatten if there are any peers to the allOf that might modify
-    // the properties we might want to reference/spread.
     const result: AllOfResults = {
-      spread: [],
-      flatten: [],
-      mustFlatten: schema.get("required") !== undefined
+      references: [],
+      schemas: [],
     };
 
-    if (!allOfs || allOfs.length === 0) {
-      return result;
+    if (schema.referencedSchema) {
+      result.references.push(schema.referencedSchema);
     }
 
-    const allOfResults = [];
+    const keys = Array.from(schema.keys());
+    const hasNonAllOfProps = schema.has("allOf") ? keys.length > 1 : keys.length > 0;
+
+    if (hasNonAllOfProps) {
+      result.schemas.push(schema);
+    }
+
     for (let i = 0; i < allOfs.length; i++) {
       const resolved = await schema.resolveSubschema(`0/allOf/${i}`);
-      allOfResults.push({ schema: resolved, allOfResults: await flattenAllOfs(resolved) });
-    }
-    
-    result.mustFlatten = result.mustFlatten || allOfResults.some(r => r.allOfResults.mustFlatten);
-
-    for (const subResult of allOfResults) {
-      if (!result.mustFlatten && subResult.schema.referencedSchema) {
-        result.spread.push(subResult.schema);
-      } else {
-        if (result.mustFlatten || subResult.allOfResults.mustFlatten) {
-          result.flatten = result.flatten.concat(subResult.allOfResults.spread);
-          for (const spread of subResult.allOfResults.spread) {
-            if (spread.referencedSchema) {
-              result.flatten.push(spread.referencedSchema);
-            }
-          }
-        } else {
-          result.spread = result.spread.concat(subResult.allOfResults.spread);
-        }
-        result.flatten = result.flatten.concat(subResult.allOfResults.flatten);
-        result.flatten.push(subResult.schema);
-      }
+      const nested = await flattenAllOfs(resolved);
+      result.references = result.references.concat(nested.references);
+      result.schemas = result.schemas.concat(nested.schemas);
     }
 
     return result;
   }
+
   async function arrayDecl(schema: ResolvedSchema) {
     log.trace("Emitting array");
     const itemsSchema = schema.get("items");
@@ -444,8 +466,8 @@ export function createCadlEmitter() {
     } else if (schema.has("const")) {
       return {
         kind: "expression",
-        code: JSON.stringify(schema.get("const"))
-      }
+        code: JSON.stringify(schema.get("const")),
+      };
     }
     // deliberately get type only from the current schema
     let type = typeOverride ?? schema.get("type");
@@ -462,11 +484,12 @@ export function createCadlEmitter() {
         // else maybe we can hobble along with the type we inherited.
         type = schema.type;
         if (!type) {
+          console.log(schema);
           throw new Error("Couldn't find type for schema");
         }
       }
     }
-    
+
     if (Array.isArray(type)) {
       return unionExpressionFromArray(schema);
     } else {
@@ -491,20 +514,14 @@ export function createCadlEmitter() {
 
   async function getObjectProperties(
     schema: ResolvedSchema,
-    allOf: AllOfResults = { spread: [], flatten: [], mustFlatten: false }
+    flattens: ResolvedSchema[] = [ schema ],
+    spreads: ResolvedSchema[] = []
   ): Promise<string> {
     const propertyDefs: string[] = [];
-    const propertySources: ResolvedSchema[] = [];
+    const propertySources: ResolvedSchema[] = flattens;
     const required = new Set<string>();
 
-
-
-    for (const propSource of [schema, ...allOf.flatten]) {
-      const propProp = propSource.get("properties");
-      if (propProp) {
-        propertySources.push(propSource);
-      }
-
+    for (const propSource of propertySources) {
       const requiredSpec = propSource.get("required");
       if (requiredSpec) {
         for (const requiredProp of requiredSpec) {
@@ -512,17 +529,20 @@ export function createCadlEmitter() {
         }
       }
     }
-    for (const spreadSource of allOf.spread) {
-      propertyDefs.push(`... ${cadlReference(await emitSchema(spreadSource))};`);
+
+    for (const spreadSource of spreads) {
+      propertyDefs.push(
+        `... ${cadlReference(await emitSchema(spreadSource))};`
+      );
     }
 
     for (const propSource of propertySources) {
-      for (let name of Object.keys(propSource.get("properties"))) {
-        // TODO: handle all keywords
+      for (let name of Object.keys(propSource.get("properties") ?? {})) {
         const propertySchema = await propSource.resolveSubschema(
           `0/properties/${name}`
         );
 
+        // TODO: better escaping.
         if (name === "model") {
           name = '"model"';
         }
@@ -537,7 +557,12 @@ export function createCadlEmitter() {
             // but it will fail if e.g. an inline object has a $ref to
             // something.
             cadlType = await emitSchema(propertySchema.referencedSchema);
-          } else if (propertySchema.type || propertySchema.get("oneOf") ||propertySchema.get("anyOf") || propertySchema.get("allOf")) {
+          } else if (
+            propertySchema.type ||
+            propertySchema.get("oneOf") ||
+            propertySchema.get("anyOf") ||
+            propertySchema.get("allOf")
+          ) {
             cadlType = await emitSchema(propertySchema);
           } else {
             throw new Error("Don't know how to emit this property");
@@ -551,7 +576,6 @@ export function createCadlEmitter() {
         );
       }
     }
-
 
     return "{" + propertyDefs.map((p) => "  " + p).join("\n") + "}";
   }
@@ -567,7 +591,9 @@ export function createCadlEmitter() {
     }
 
     if (schema.has("pattern")) {
-      validations += `@pattern("${schema.get("pattern").replace(/\\/g, "\\\\")}")\n`;
+      validations += `@pattern("${schema
+        .get("pattern")
+        .replace(/\\/g, "\\\\")}")\n`;
     }
 
     if (schema.has("minimum")) {
@@ -676,9 +702,3 @@ export function createCadlEmitter() {
       : null;
   }
 }
-
-/*
-const emitter = createCadlEmitter();
-await emitter.addSchema("test/schemas/object.yaml");
-const code = await emitter.emit();
-/**/

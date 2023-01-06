@@ -7,11 +7,24 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "Launch Current File",
       "skipFiles": [
         "<node_internals>/**"
       ],
       "program": "${file}",
+      "outFiles": [
+        "${workspaceFolder}/**/*.js"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch CLI",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/dist/src/cli.js",
+      "args": ["${input:inputFile}"],
       "outFiles": [
         "${workspaceFolder}/**/*.js"
       ]
@@ -27,6 +40,13 @@
       "outFiles": [
         "${workspaceFolder}/**/*.js"
       ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "inputFile",
+      "type": "promptString",
+      "description": "JSON Schema file to convert"
     }
   ]
 }

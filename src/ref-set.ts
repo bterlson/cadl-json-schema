@@ -41,7 +41,7 @@ export interface RefSet {
   get(key: string, resolver?: ResolverFn): any;
   has(key: string): boolean;
   addSchema(schema: RawSchema): void;
-  keys(): string[];
+  keys(): IterableIterator<string>;
 }
 
 export function createRefSet(schemas: RawSchema[] = []): RefSet {
@@ -69,22 +69,24 @@ export function createRefSet(schemas: RawSchema[] = []): RefSet {
           return true;
         }
       }
-      
+
       return false;
     },
 
     addSchema(schema) {
       schemas.push(schema);
     },
-
-    keys() {
-      const keys = new Set<string>();
+    
+    *keys() {
+      const seen = new Set<string>();
       for (const schema of schemas) {
         for (const key of Object.keys(schema.contents)) {
-          keys.add(key);
+          if (!seen.has(key)) {
+            seen.add(key);
+            yield key;
+          }
         }
       }
-      return Array.from(keys);
     }
   }
 }

@@ -51,10 +51,14 @@ export interface ResolvedSchema extends RawSchema {
   getOwn(key: string): any;
   has(key: string): boolean;
   hasOwn(key: string): boolean;
+  keys(): IterableIterator<string>;
+  ownKeys(): IterableIterator<string>;
   resolveSubschema(path: string): Promise<ResolvedSchema>;
   definitions: Record<string, ResolvedSchema>;
 }
+
 const versionRe = /draft-04|draft-06|draft-07|2019-09|2020-12/;
+
 
 export enum Version {
   v04,
@@ -207,13 +211,19 @@ export function createResolver() {
         return this.refset.has(key);
       },
       hasOwn(key) {
-        return this.contents.haSOwnProperty(key);
+        return this.contents.hasOwnProperty(key);
       },
       async resolveSubschema(jsonPointer) {
         const newPtr = this.jsonPointer.relative(jsonPointer);
         return this.resolver.resolve(`#${newPtr}`, {
           baseUrl: this.retrievalUrl,
         });
+      },
+      keys() {
+        return this.refset.keys();
+      },
+      ownKeys() {
+        return Object.keys(this.contents).values()
       },
       definitions: {},
     };
@@ -284,7 +294,6 @@ export function createResolver() {
     }
 
     let definitionName: string | undefined;
-    // TODO: only allow definitions for proper version!
     if (
       p &&
       p.path.length === 2 &&
