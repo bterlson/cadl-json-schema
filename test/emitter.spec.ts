@@ -9,7 +9,7 @@ import {
   isArrayModelType,
   Model,
   Union,
-} from "@cadl-lang/compiler";
+} from "@typespec/compiler";
 import assert from "assert";
 import { testCadlOutput } from "./utils.js";
 
@@ -149,6 +149,7 @@ describe("primitives", () => {
     "simple primitives",
     "test/schemas/primitives.yaml",
     async ({ lookup, assertCadl, cadl, code }) => {
+      console.log(code);
       const boolean = lookup("boolean", "Scalar");
       assertCadl.type(boolean.baseScalar, cadl.boolean);
 

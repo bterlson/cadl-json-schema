@@ -1,7 +1,7 @@
 import { pathToFileURL } from "url";
 import { createResolver, ResolvedSchema, Version } from "./resolver.js";
 import { baseLogger } from "./logger/index.js";
-import { formatCadl } from "@cadl-lang/compiler";
+import { formatTypeSpec } from "@typespec/compiler";
 const log = baseLogger.child({ module: "cadl-emitter" });
 
 const idPattern = /^\p{XID_Start}\p{XID_Continue}*$/u;
@@ -79,7 +79,8 @@ export function createCadlEmitter() {
       for (const schema of allSchemas) {
         await emitSchema(schema);
       }
-      return formatCadl(code);
+      log.trace("Formatting cadl " + code);
+      return formatTypeSpec(code);
     },
   };
 
@@ -93,9 +94,13 @@ export function createCadlEmitter() {
     const { contents: _, ...context } = schema;
     log.trace(context, "Emitting schema");
 
+    try {
     return !typeOverride && schema.isDeclaration
-      ? emitSchemaToDeclaration(schema)
-      : emitSchemaToExpression(schema, typeOverride);
+      ? await emitSchemaToDeclaration(schema)
+      : await emitSchemaToExpression(schema, typeOverride);
+    } catch (e) {
+      return { kind: "expression", code: "unknown /* error encountered emitting this type */"}
+    }
   }
 
   async function emitSchemaToDeclaration(
@@ -105,7 +110,15 @@ export function createCadlEmitter() {
 
     let cadlType: CadlTypeDeclaration;
 
-    if (schema.has("oneOf") || schema.has("anyOf")) {
+    if(schema.has('if')) {
+      const id = declarationName(schema);
+      cadlType = {
+        kind: "declaration",
+        schema: schema,
+        id,
+        code: `// if/else containing schema aliased to unknown\nalias ${id} = unknown;`
+      }
+    } else if (schema.has("oneOf") || schema.has("anyOf")) {
       cadlType = await unionDeclFromOneOrAnyOf(schema);
     } else if (schema.has("allOf")) {
       // TODO: allOf might not be a model type.
@@ -162,7 +175,7 @@ export function createCadlEmitter() {
       const resolvedSchema = await schema.resolveSubschema(
         `0/${variantProp}/${i}`
       );
-      let name = resolvedSchema.get("title") ?? `variant${i}`;
+      const name = resolvedSchema.get("title") ?? `variant${i}`;
       variants.push(
         `${name}: ${cadlReference(await emitSchema(resolvedSchema))};`
       );
@@ -417,7 +430,7 @@ export function createCadlEmitter() {
 
     let ref = cadlReference(baseType);
     if (baseType.kind === "intrinsic" && baseType.id === cadlType.id) {
-      ref = `Cadl.${ref}`;
+      ref = `TypeSpec.${ref}`;
     }
     const extendsClause = ` extends ${ref}`;
 
@@ -459,7 +472,9 @@ export function createCadlEmitter() {
     schema: ResolvedSchema,
     typeOverride?: string
   ): Promise<CadlType> {
-    if (schema.has("enum")) {
+    if (schema.has("if")) {
+      return { kind: "expression", code: "unknown /* schema contained if/else */"}
+    } else if (schema.has("enum")) {
       return enumExpression(schema);
     } else if (schema.has("oneOf") || schema.has("anyOf")) {
       return unionExpressionFromOneOf(schema);
@@ -484,8 +499,10 @@ export function createCadlEmitter() {
         // else maybe we can hobble along with the type we inherited.
         type = schema.type;
         if (!type) {
-          console.log(schema);
-          throw new Error("Couldn't find type for schema");
+          return {
+            kind: "expression",
+            code: `unknown /* empty schema */`
+          }
         }
       }
     }
@@ -565,12 +582,12 @@ export function createCadlEmitter() {
           ) {
             cadlType = await emitSchema(propertySchema);
           } else {
-            throw new Error("Don't know how to emit this property");
+            cadlType = unknownIntrinsic;
           }
         }
 
         propertyDefs.push(
-          `${validations}${name}${
+          `${validations} "${name}"${
             required.has(name) ? "" : "?"
           }: ${cadlReference(cadlType!)};`
         );
@@ -617,7 +634,12 @@ export function createCadlEmitter() {
     }
 
     if (schema.has("description")) {
-      validations += `@doc("${schema.get("description")}")\n`;
+      const value = schema.get("description");
+      if (value.indexOf("\n") > -1) {
+        validations += `@doc("""\n${schema.get("description")}\n""")\n`;
+      } else {
+        validations += `@doc("${schema.get("description")}")\n`;
+      }
     }
 
     if (schema.has("maxItems")) {

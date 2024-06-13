@@ -125,7 +125,7 @@ export function createResolver() {
       const schemas = [];
       while (true) {
         const retreivalUrl = new URL(schema.contents.$ref, schema.retrievalUrl);
-        let refSchema = await resolveRawSchema(retreivalUrl);
+        const refSchema = await resolveRawSchema(retreivalUrl);
         schemas.push(refSchema);
         if (!refSchema.contents.$ref) break;
         schema = refSchema;
@@ -215,7 +215,7 @@ export function createResolver() {
       },
       async resolveSubschema(jsonPointer) {
         const newPtr = this.jsonPointer.relative(jsonPointer);
-        return this.resolver.resolve(`#${newPtr}`, {
+        return await this.resolver.resolve(`#${newPtr}`, {
           baseUrl: this.retrievalUrl,
         });
       },
@@ -262,7 +262,7 @@ export function createResolver() {
 
     return schemas;
   }
-
+  
   async function resolveRawSchema(retrievalUrl: URL): Promise<RawSchema> {
     log.trace(`Resolving schema at ${retrievalUrl}`);
     if (rawSchemasByUrl.has(retrievalUrl.href)) {
@@ -288,6 +288,8 @@ export function createResolver() {
     const contents = p.get(rootSchema.contents);
 
     if (!contents) {
+      debugger;
+      console.log(JSON.stringify(rootSchema.contents))
       throw new Error(
         `The JSON Pointer ${ptr} could not be resolved in the document`
       );
@@ -304,14 +306,22 @@ export function createResolver() {
       definitionName = p.path[1].toString();
     }
 
-    const canonicalUrl = new URL(rootSchema.canonicalUrl);
-    canonicalUrl.hash = retrievalUrl.hash;
+    const version = detectVersionFromContents(contents, rootSchema.version);
+    const id = getId(contents, version);
+
+    let canonicalUrl;
+    if (id) {
+      canonicalUrl = new URL(id, rootSchema.canonicalUrl);
+    } else {
+      canonicalUrl = new URL(rootSchema.canonicalUrl);
+      canonicalUrl.hash = retrievalUrl.hash;
+    } 
 
     // possibly incorrect if there are versions declared between the root
     // and the schema we're looking at. Should probably find nearest schema
     // with a version?
     // N.B. don't do this to json schema, please?
-    let version = detectVersionFromContents(contents, rootSchema.version);
+    
 
     const rawSchema: RawSchema = {
       retrievalUrl,
@@ -322,7 +332,7 @@ export function createResolver() {
       definitionName,
       resolver,
       version,
-      id: getId(contents, version),
+      id,
       isRoot: false,
     };
 
@@ -358,6 +368,8 @@ export function createResolver() {
       case "https:":
         sourceFile = await resolveHttp(reference);
         break;
+      default:
+        throw new Error("Unknown protocol: " + reference.protocol);
     }
 
     if (sourceFile) {

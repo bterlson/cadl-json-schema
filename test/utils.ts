@@ -7,8 +7,8 @@ import {
   Type,
   Program,
   IntrinsicType
-} from "@cadl-lang/compiler";
-import { createTestHost, TestHost } from "@cadl-lang/compiler/testing";
+} from "@typespec/compiler";
+import { createTestHost, TestHost } from "@typespec/compiler/testing";
 
 export function testCadlOutput(
   description: string,
@@ -101,20 +101,20 @@ function testCadlOutputWorker(
 
 function createCadlHelpers(host: TestHost): CadlHelpers {
   return {
-    int8: lookup(host, `Cadl.int8`, "Scalar"),
-    int16: lookup(host, `Cadl.int16`, "Scalar"),
-    int32: lookup(host, `Cadl.int32`, "Scalar"),
-    int64: lookup(host, `Cadl.int64`, "Scalar"),
-    uint8: lookup(host, `Cadl.uint8`, "Scalar"),
-    uint16: lookup(host, `Cadl.uint16`, "Scalar"),
-    uint32: lookup(host, `Cadl.uint32`, "Scalar"),
-    uint64: lookup(host, `Cadl.uint64`, "Scalar"),
-    safeint: lookup(host, `Cadl.safeint`, "Scalar"),
-    string: lookup(host, `Cadl.string`, "Scalar"),
-    float32: lookup(host, `Cadl.float32`, "Scalar"),
-    float64: lookup(host, `Cadl.float64`, "Scalar"),
-    boolean: lookup(host, `Cadl.boolean`, "Scalar"),
-    null: lookup(host, "Cadl.null", "Intrinsic"),
+    int8: lookup(host, `TypeSpec.int8`, "Scalar"),
+    int16: lookup(host, `TypeSpec.int16`, "Scalar"),
+    int32: lookup(host, `TypeSpec.int32`, "Scalar"),
+    int64: lookup(host, `TypeSpec.int64`, "Scalar"),
+    uint8: lookup(host, `TypeSpec.uint8`, "Scalar"),
+    uint16: lookup(host, `TypeSpec.uint16`, "Scalar"),
+    uint32: lookup(host, `TypeSpec.uint32`, "Scalar"),
+    uint64: lookup(host, `TypeSpec.uint64`, "Scalar"),
+    safeint: lookup(host, `TypeSpec.safeint`, "Scalar"),
+    string: lookup(host, `TypeSpec.string`, "Scalar"),
+    float32: lookup(host, `TypeSpec.float32`, "Scalar"),
+    float64: lookup(host, `TypeSpec.float64`, "Scalar"),
+    boolean: lookup(host, `TypeSpec.boolean`, "Scalar"),
+    null: lookup(host, "TypeSpec.null", "Intrinsic"),
     unknown: host.program.checker.anyType
   };
 }
@@ -176,7 +176,7 @@ export async function emitAndCompile(file: string) {
   await emitter.addSchema(file);
   const code = await emitter.emit();
   const cadlHost = await createTestHost();
-  cadlHost.addCadlFile("main.cadl", code);
+  cadlHost.addTypeSpecFile("main.cadl", code);
 
   try {
     await cadlHost.compile("main.cadl");

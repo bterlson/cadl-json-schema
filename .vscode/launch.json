@@ -5,6 +5,15 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/app.js",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Launch Current File",
@@ -26,8 +35,9 @@
       "program": "${workspaceFolder}/dist/src/cli.js",
       "args": ["${input:inputFile}"],
       "outFiles": [
-        "${workspaceFolder}/**/*.js"
-      ]
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "sourceMaps": true
     },
     {
       "type": "node",
